@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* Identidad propia de Work Shop: verde petróleo + ámbar, pensado para pantalla de celular */
+@theme {
+  --color-marca: #12584c;
+  --color-marca-2: #0b3d35;
+  --color-acento: #e8a33d;
+  --color-fondo: #f4f2ee;
+  --color-tinta: #1b1f1e;
+  --color-suave: #6b716f;
+  --color-linea: #e3dfd8;
+  --color-ok: #1f8a4c;
+  --color-mal: #c2412d;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@utility card {
+    @apply rounded-2xl bg-white border border-linea p-4;
+  }
+
+@utility btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 h-12 font-semibold text-[15px] transition active:scale-[0.98] disabled:opacity-50;
+  }
+
+@utility btn-primario {
+    @apply btn bg-marca text-white;
+  }
+
+@utility btn-secundario {
+    @apply btn bg-white border border-linea text-tinta;
+  }
+
+@utility btn-peligro {
+    @apply btn bg-white border border-mal/30 text-mal;
+  }
+
+@utility input {
+    @apply w-full h-12 rounded-xl border border-linea bg-white px-3 text-[16px] outline-none focus:border-marca focus:ring-2 focus:ring-marca/15;
+  }
+
+@utility label {
+    @apply block text-[13px] font-medium text-suave mb-1;
+  }
+
+@utility chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-semibold;
+  }
+
+@utility fila {
+    @apply flex items-center gap-3 px-4 py-3 border-b border-linea active:bg-fondo;
+    &:last-child { border-bottom-width: 0; }
+  }
+
