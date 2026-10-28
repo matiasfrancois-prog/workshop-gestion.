@@ -12,6 +12,7 @@ const TITULOS: Record<string, string> = {
   compra: "INGRESO DE MERCADERÍA",
   nc_compra: "NOTA DE CRÉDITO PROVEEDOR",
   nd_compra: "NOTA DE DÉBITO PROVEEDOR",
+  orden_compra: "ORDEN DE COMPRA",
 };
 
 function DatosTercero({ t, rotulo }: { t: TerceroPdf | null; rotulo: string }) {
@@ -41,13 +42,26 @@ function DatosTercero({ t, rotulo }: { t: TerceroPdf | null; rotulo: string }) {
 
 // ---------- Comprobante (venta, pedido, presupuesto, compra, NC) ----------
 export function ComprobanteA4({ e, c, saldo }: { e: Empresa; c: ComprobantePdf; saldo?: { usd: number; ars: number } }) {
-  const esCompra = ["compra", "nc_compra", "nd_compra"].includes(c.tipo);
+  const esCompra = ["compra", "nc_compra", "nd_compra", "orden_compra"].includes(c.tipo);
   const nro = nroComprobante(c.tipo, c.numero);
   return (
     <A4 titulo={nro}>
       <Cabecera e={e} titulo={TITULOS[c.tipo]} numero={nro} fecha={fecha(c.fecha)} extra={c.vendedor ? `Atendió: ${c.vendedor}` : undefined} />
       {c.estado === "anulado" && <Text style={[s.negrita, { fontSize: 14, textAlign: "center", marginBottom: 8 }]}>*** ANULADO ***</Text>}
       <DatosTercero t={esCompra ? c.proveedor : c.cliente} rotulo={esCompra ? "Proveedor" : "Cliente"} />
+      {(c.nro_externo || c.vencimiento || c.cotizacion || ["venta", "compra", "nd_venta", "nd_compra"].includes(c.tipo)) && (
+        <View style={[s.fila, { gap: 16, marginTop: -6, marginBottom: 10, flexWrap: "wrap" }]}>
+          {c.nro_externo && <Text>Comprobante proveedor: <Text style={s.negrita}>{c.nro_externo}</Text></Text>}
+          {["venta", "compra", "nd_venta", "nd_compra"].includes(c.tipo) && (
+            <Text>
+              Condición: <Text style={s.negrita}>{c.contado ? "Contado" : "Cuenta corriente"}</Text>
+              {c.pendiente !== null && (c.pendiente <= 0 ? " · Pagado" : ` · Saldo ${money(c.pendiente, c.moneda)}`)}
+            </Text>
+          )}
+          {c.vencimiento && <Text>Vencimiento: <Text style={s.negrita}>{fecha(c.vencimiento)}</Text></Text>}
+          {c.cotizacion && <Text>Cotización: US$ 1 = $ {num(c.cotizacion)}</Text>}
+        </View>
+      )}
 
       <View style={s.fila}>
         <Text style={[s.th, { width: 40, textAlign: "center" }]}>Cant.</Text>

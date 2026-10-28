@@ -8,10 +8,12 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
   const { vista = "reponer" } = await searchParams;
   const supabase = await createClient();
   const hace30 = new Date(Date.now() - 30 * 864e5).toISOString();
-  const [{ data: stock }, { data: ventas }] = await Promise.all([
+  const [{ data: stock }, { data: ventas }, { data: camino }] = await Promise.all([
     supabase.from("stock_actual").select("producto_id, nombre, stock, stock_minimo"),
     supabase.from("movimientos_stock").select("producto_id, cantidad").eq("tipo", "venta").gte("fecha", hace30),
+    supabase.from("stock_en_camino").select("producto_id, en_camino"),
   ]);
+  const enCamino = new Map((camino ?? []).map((c) => [c.producto_id, Number(c.en_camino)]));
 
   const vendido = new Map<number, number>();
   for (const v of ventas ?? []) vendido.set(v.producto_id, (vendido.get(v.producto_id) ?? 0) - Number(v.cantidad));
@@ -48,7 +50,11 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
             <Link key={p.producto_id} href={`/productos/${p.producto_id}`} className="fila">
               <div className="flex-1 min-w-0">
                 <p className="truncate font-medium">📱 {p.nombre}</p>
-                <p className="text-xs text-suave">Vendidos 30 días: {num(p.v30)}{p.dias !== null && ` · ${p.dias} días de stock`}</p>
+                <p className="text-xs text-suave">
+                  Vendidos 30 días: {num(p.v30)}
+                  {p.dias !== null && ` · ${p.dias} días de stock`}
+                  {enCamino.get(p.producto_id) ? ` · ${num(enCamino.get(p.producto_id))} en camino` : ""}
+                </p>
               </div>
               <span className={`font-bold ${p.stock <= 0 ? "text-mal" : ""}`}>{num(p.stock)}</span>
             </Link>

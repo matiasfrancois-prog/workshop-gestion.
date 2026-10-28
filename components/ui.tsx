@@ -2,10 +2,12 @@ import Link from "next/link";
 import type { Moneda } from "@/lib/format";
 import { money } from "@/lib/format";
 
-export function Encabezado({ titulo, volver, accion }: { titulo: string; volver?: string; accion?: React.ReactNode }) {
+const ANCHO = { normal: "max-w-xl", ancho: "max-w-xl md:max-w-6xl" };
+
+export function Encabezado({ titulo, volver, accion, ancho = "normal" }: { titulo: string; volver?: string; accion?: React.ReactNode; ancho?: keyof typeof ANCHO }) {
   return (
     <header className="sticky top-0 z-20 bg-marca text-white pt-[env(safe-area-inset-top)]">
-      <div className="max-w-xl mx-auto flex items-center gap-2 h-14 px-3">
+      <div className={`${ANCHO[ancho]} mx-auto flex items-center gap-2 h-14 px-3`}>
         {volver && (
           <Link href={volver} aria-label="Volver" className="size-10 grid place-items-center rounded-full active:bg-white/10">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M15 18l-6-6 6-6" /></svg>
@@ -18,8 +20,8 @@ export function Encabezado({ titulo, volver, accion }: { titulo: string; volver?
   );
 }
 
-export function Pagina({ children }: { children: React.ReactNode }) {
-  return <main className="max-w-xl mx-auto px-3 pt-3 pb-28 space-y-3">{children}</main>;
+export function Pagina({ children, ancho = "normal" }: { children: React.ReactNode; ancho?: keyof typeof ANCHO }) {
+  return <main className={`${ANCHO[ancho]} mx-auto px-3 pt-3 pb-28 md:pb-12 space-y-3`}>{children}</main>;
 }
 
 export function Buscador({ q, placeholder, extra }: { q?: string; placeholder: string; extra?: React.ReactNode }) {
@@ -46,7 +48,7 @@ export function Vacio({ texto }: { texto: string }) {
 
 export function BotonFlotante({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="fixed right-4 bottom-24 z-20 btn-primario rounded-full shadow-lg shadow-marca/30 px-5">
+    <Link href={href} className="fixed right-4 bottom-24 md:bottom-8 z-20 btn-primario rounded-full shadow-lg shadow-marca/30 px-5">
       + {label}
     </Link>
   );

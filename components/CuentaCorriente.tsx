@@ -45,7 +45,7 @@ export default function CuentaCorriente({
         </div>
       )}
 
-      <details className="card" open={false}>
+      <details className="card" id="cobro">
         <summary className="font-semibold cursor-pointer">{esCliente ? "Registrar cobro" : "Registrar pago"}</summary>
         <form action={registrarPago} className="mt-3 space-y-3">
           <input type="hidden" name="tabla" value={tabla} />
@@ -140,7 +140,7 @@ export default function CuentaCorriente({
                       {nroComprobante(x.concepto, x.numero ?? 0)}
                     </Link>
                   ) : (
-                    <a href={`/pdf/recibo/${x.origen_id}`} target="_blank" className="text-sm font-medium text-marca">
+                    <a href={`/recibos/${x.origen_id}`} className="text-sm font-medium text-marca">
                       {nroRecibo(esCliente, x.numero ?? 0)} <span className="text-suave font-normal">{x.concepto.split("·")[1]}</span>
                     </a>
                   )}

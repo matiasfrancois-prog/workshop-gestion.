@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { crearComprobante, nuevasSeries, type CobroNuevo, type NuevoComprobante } from "@/app/(app)/comprobantes/actions";
+import { crearComprobante, modificarComprobante, nuevasSeries, type CobroNuevo, type ExtraComprobante, type NuevoComprobante } from "@/app/(app)/comprobantes/actions";
 import { money, num, TIPOS, type Moneda } from "@/lib/format";
 import CamposCobro, { type Caja } from "./CamposCobro";
 import Escaner from "./Escaner";
@@ -16,7 +16,8 @@ export type ProductoVenta = {
   precios: Record<number, number>;
 };
 export type Tercero = { id: number; nombre: string; lista_id: number | null; saldo_usd: number; saldo_ars: number; habilitado: boolean; limite: number | null };
-export type LineaInicial = { producto_id: number | null; descripcion: string; cantidad: number; precio_unit: number };
+export type LineaInicial = { producto_id: number | null; descripcion: string; cantidad: number; precio_unit: number; series?: string[] };
+export type CabeceraInicial = ExtraComprobante & { observaciones?: string | null };
 type Linea = LineaInicial & { key: number; series: string[] };
 
 type Props = {
@@ -33,10 +34,12 @@ type Props = {
   lineasIniciales?: LineaInicial[];
   monedaInicial?: Moneda;
   origenId?: number | null;
+  cabecera?: CabeceraInicial;
+  editar?: { id: number; titulo: string }; // modo modificación
 };
 
 const TIPOS_VENTA = ["venta", "pedido", "presupuesto", "nc_venta"] as const;
-const TIPOS_COMPRA = ["compra", "nc_compra"] as const;
+const TIPOS_COMPRA = ["compra", "orden_compra", "nc_compra"] as const;
 const MUEVE = ["venta", "nc_venta", "compra", "nc_compra"];
 
 export default function Carrito(props: Props) {
@@ -48,10 +51,18 @@ export default function Carrito(props: Props) {
   const [buscaTercero, setBuscaTercero] = useState("");
   const [moneda, setMoneda] = useState<Moneda>(props.monedaInicial ?? "USD");
   const [lineas, setLineas] = useState<Linea[]>(() =>
-    (props.lineasIniciales ?? []).map((l, i) => ({ ...l, key: i + 1, series: [] })),
+    (props.lineasIniciales ?? []).map((l, i) => ({ ...l, key: i + 1, series: l.series ?? [] })),
   );
+  const cab = props.cabecera ?? {};
+  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const [fecha, setFecha] = useState(cab.fecha ?? hoy);
+  const [nroExterno, setNroExterno] = useState(cab.nro_externo ?? "");
+  const [vencimiento, setVencimiento] = useState(cab.vencimiento ?? "");
+  const [cotizRef, setCotizRef] = useState<string>(String(cab.cotizacion ?? cotizacion ?? ""));
+  const [actualizaCostos, setActualizaCostos] = useState(cab.actualiza_costos ?? true);
+  const editando = !!props.editar;
   const [busca, setBusca] = useState("");
-  const [obs, setObs] = useState("");
+  const [obs, setObs] = useState(props.cabecera?.observaciones ?? "");
   const [error, setError] = useState<string | null>(null);
   const [conCobro, setConCobro] = useState(false);
   const [cobro, setCobro] = useState<CobroNuevo | null>(null);
@@ -140,6 +151,33 @@ export default function Carrito(props: Props) {
     if (sinSerie) return setError(`Cargá los IMEI / series de ${sinSerie.descripcion}.`);
     if (lineas.some((l) => !(cant(l) > 0))) return setError("Revisá las cantidades.");
     if (lineas.some((l) => !l.descripcion.trim())) return setError("Hay una línea sin descripción.");
+    const extra: ExtraComprobante = {
+      fecha,
+      nro_externo: modo === "compra" ? nroExterno.trim() || null : null,
+      vencimiento: vencimiento || null,
+      cotizacion: Number(cotizRef) > 0 ? Number(cotizRef) : null,
+      actualiza_costos: actualizaCostos,
+    };
+    if (props.editar) {
+      const edId = props.editar.id;
+      startTransition(async () => {
+        const r = await modificarComprobante(
+          edId,
+          {
+            tipo,
+            cliente_id: modo === "venta" ? tercero.id : null,
+            proveedor_id: modo === "compra" ? tercero.id : null,
+            moneda,
+            items: lineas.map((l) => ({ producto_id: l.producto_id, descripcion: l.descripcion, cantidad: cant(l), precio_unit: l.precio_unit, series: usaSeries(l) ? l.series : [] })),
+            observaciones: obs.trim() || null,
+          },
+          extra,
+        );
+        if (r.error) setError(r.error);
+        else router.push(`/comprobantes/${edId}?modificado=1`);
+      });
+      return;
+    }
     startTransition(async () => {
       const r = await crearComprobante(
         {
@@ -158,6 +196,7 @@ export default function Carrito(props: Props) {
           origen_id: props.origenId ?? null,
         },
         conCobro && (tipo === "venta" || tipo === "compra") ? cobro : null,
+        extra,
       );
       if (r.error) setError(r.error);
       else router.push(`/comprobantes/${r.id}?nuevo=1${r.recibo ? `&recibo=${r.recibo}` : ""}${r.errorCobro ? `&error=${encodeURIComponent("El comprobante se guardó pero el cobro no: " + r.errorCobro)}` : ""}`);
@@ -170,7 +209,7 @@ export default function Carrito(props: Props) {
   return (
     <div className="space-y-3 pb-24">
       <div className="flex gap-2 overflow-x-auto -mx-3 px-3">
-        {(modo === "venta" ? TIPOS_VENTA : TIPOS_COMPRA).map((t) => (
+        {(editando ? [tipo] : modo === "venta" ? TIPOS_VENTA : TIPOS_COMPRA).map((t) => (
           <button
             key={t}
             type="button"
@@ -178,6 +217,7 @@ export default function Carrito(props: Props) {
             className={`chip h-9 px-3 whitespace-nowrap border ${tipo === t ? "bg-marca text-white border-marca" : "bg-white border-linea"}`}
           >
             {t === "nc_venta" ? "Devolución" : t === "nc_compra" ? "Devolución a proveedor" : TIPOS[t].label}
+            {editando && " (modificando)"}
           </button>
         ))}
       </div>
@@ -212,6 +252,47 @@ export default function Carrito(props: Props) {
               ))}
             </div>
           </>
+        )}
+      </section>
+
+      {/* Datos del comprobante */}
+      <section className="card grid grid-cols-2 gap-3">
+        <div>
+          <label className="label">Fecha</label>
+          <input className="input h-10" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Cotización US$</label>
+          <input className="input h-10" type="number" step="0.01" inputMode="decimal" value={cotizRef} onChange={(e) => setCotizRef(e.target.value)} />
+        </div>
+        {modo === "compra" && (
+          <>
+            <div className="col-span-2">
+              <label className="label">Comprobante del proveedor</label>
+              <input className="input h-10" placeholder="FAC A 0001-00004535" value={nroExterno} onChange={(e) => setNroExterno(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Vencimiento</label>
+              <input className="input h-10" type="date" value={vencimiento} onChange={(e) => setVencimiento(e.target.value)} />
+            </div>
+            {tipo === "compra" && (
+              <div>
+                <label className="label">Actualiza costos</label>
+                <div className="grid grid-cols-2 gap-1">
+                  {[true, false].map((v) => (
+                    <button key={String(v)} type="button" onClick={() => setActualizaCostos(v)} className={`h-10 rounded-xl border text-sm font-semibold ${actualizaCostos === v ? "bg-marca text-white border-marca" : "bg-white border-linea"}`}>
+                      {v ? "Sí" : "No"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        {tipo === "orden_compra" && (
+          <p className="col-span-2 text-xs text-suave">
+            Mercadería <b>pendiente de recibir</b>: no mueve stock ni cuenta corriente. Cuando llega, abrí la orden y tocá <b>Recibir mercadería</b>.
+          </p>
         )}
       </section>
 
@@ -276,30 +357,43 @@ export default function Carrito(props: Props) {
         <textarea className="input h-16 py-2" placeholder="Observaciones" value={obs} onChange={(e) => setObs(e.target.value)} />
       </section>
 
-      {(tipo === "venta" || tipo === "compra") && (
+      {(tipo === "venta" || tipo === "compra") && !editando && (
         <section className="card space-y-3">
-          <label className="flex items-center gap-2 font-semibold">
-            <input type="checkbox" className="size-5 accent-marca" checked={conCobro} onChange={(e) => setConCobro(e.target.checked)} />
-            {tipo === "venta" ? "Cobrar ahora" : "Pagar ahora"}
-          </label>
-          {conCobro && (
+          <p className="text-xs font-semibold text-suave">Forma de pago</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              [false, "Cuenta corriente"],
+              [true, tipo === "venta" ? "Contado (cobrar ahora)" : "Contado (pagar ahora)"],
+            ].map(([v, t]) => (
+              <button
+                key={String(v)}
+                type="button"
+                onClick={() => setConCobro(v as boolean)}
+                className={`h-11 rounded-xl border text-sm font-semibold ${conCobro === v ? "bg-marca text-white border-marca" : "bg-white border-linea"}`}
+              >
+                {t as string}
+              </button>
+            ))}
+          </div>
+          {conCobro ? (
             <CamposCobro
               key={`${moneda}-${Math.round(total)}`}
               cajas={cajas}
-              cotizacion={cotizacion}
+              cotizacion={Number(cotizRef) || cotizacion}
               monedaCuenta={moneda}
               importeSugerido={total}
               onChange={setCobro}
             />
+          ) : (
+            <p className="text-xs text-suave">Queda en cuenta corriente. Se cancela después con un {tipo === "venta" ? "recibo" : "orden de pago"}.</p>
           )}
-          {!conCobro && <p className="text-xs text-suave">Si no se cobra ahora, queda en cuenta corriente.</p>}
         </section>
       )}
 
       {excedeLimite && <p className="card text-sm text-mal">⚠️ Con esta venta supera el límite de crédito ({money(tercero!.limite)}).</p>}
       {error && <p className="card text-sm text-mal">{error}</p>}
 
-      <div className="fixed bottom-16 inset-x-0 z-20 bg-white border-t border-linea pb-[env(safe-area-inset-bottom)]">
+      <div className="fixed bottom-16 md:bottom-0 inset-x-0 z-20 bg-white border-t border-linea pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-xl mx-auto flex items-center gap-3 px-4 py-3">
           <div className="flex-1">
             <p className="text-xs text-suave">Total {TIPOS[tipo].label.toLowerCase()}</p>
@@ -309,7 +403,7 @@ export default function Carrito(props: Props) {
             )}
           </div>
           <button type="button" onClick={guardar} disabled={pendiente} className="btn-primario px-6">
-            {pendiente ? "Guardando…" : "Confirmar"}
+            {pendiente ? "Guardando…" : editando ? "Guardar cambios" : "Confirmar"}
           </button>
         </div>
       </div>

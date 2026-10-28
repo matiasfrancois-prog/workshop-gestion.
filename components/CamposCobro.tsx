@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { money, type Moneda, type MonedaCaja } from "@/lib/format";
 
 export type Caja = { id: number; nombre: string; moneda: MonedaCaja };
@@ -23,6 +23,8 @@ export default function CamposCobro({
   importeSugerido,
   onChange,
   nombres,
+  cajaInicial,
+  tcInicial,
 }: {
   cajas: Caja[];
   cotizacion: number;
@@ -30,16 +32,26 @@ export default function CamposCobro({
   importeSugerido?: number;
   onChange?: (c: Cobro | null) => void;
   nombres?: boolean; // agrega inputs ocultos para enviar en un <form>
+  cajaInicial?: number;
+  tcInicial?: number;
 }) {
-  const inicial = cajas.find((c) => c.moneda === monedaCuenta) ?? cajas[0];
+  const inicial = cajas.find((c) => c.id === cajaInicial) ?? cajas.find((c) => c.moneda === monedaCuenta) ?? cajas[0];
   const [cajaId, setCajaId] = useState(inicial?.id ?? 0);
   const [cuenta, setCuenta] = useState<Moneda>(monedaCuenta);
   const caja = cajas.find((c) => c.id === cajaId) ?? inicial;
-  const [tc, setTc] = useState(tcSugerido(caja?.moneda ?? "USD", monedaCuenta, cotizacion));
+  const [tc, setTc] = useState(tcInicial ?? tcSugerido(caja?.moneda ?? "USD", monedaCuenta, cotizacion));
+  const primera = useRef(true);
   const [importeCaja, setImporteCaja] = useState<string>(importeSugerido ? String(importeSugerido) : "");
 
   useEffect(() => setCuenta(monedaCuenta), [monedaCuenta]);
-  useEffect(() => setTc(tcSugerido(caja?.moneda ?? "USD", cuenta, cotizacion)), [caja?.moneda, cuenta, cotizacion]);
+  useEffect(() => {
+    if (primera.current) {
+      primera.current = false;
+      if (tcInicial) return;
+    }
+    setTc(tcSugerido(caja?.moneda ?? "USD", cuenta, cotizacion));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caja?.moneda, cuenta, cotizacion]);
 
   const distinta = caja && caja.moneda !== cuenta;
   const ic = Number(importeCaja) || 0;

@@ -94,3 +94,27 @@ export async function registrarNota(form: FormData) {
   revalidatePath("/", "layout");
   redirect(`/comprobantes/${data}?nuevo=1`);
 }
+
+export async function modificarPago(form: FormData) {
+  const supabase = await createClient();
+  const id = Number(form.get("pago_id"));
+  const { error } = await supabase.rpc("modificar_pago", {
+    p_id: id,
+    p_caja_id: Number(form.get("caja_id")),
+    p_importe_caja: Number(form.get("importe_caja")),
+    p_moneda: form.get("moneda") === "ARS" ? "ARS" : "USD",
+    p_importe: Number(form.get("importe")),
+    p_fecha: t(form, "fecha") ?? undefined,
+    p_notas: t(form, "notas"),
+  });
+  revalidatePath("/", "layout");
+  redirect(`/recibos/${id}?${error ? `error=${encodeURIComponent(error.message)}` : "modificado=1"}`);
+}
+
+export async function anularPagoDesdeRecibo(form: FormData) {
+  const supabase = await createClient();
+  const id = Number(form.get("pago_id"));
+  const { error } = await supabase.rpc("anular_pago", { p_id: id });
+  revalidatePath("/", "layout");
+  redirect(`/recibos/${id}${error ? `?error=${encodeURIComponent(error.message)}` : ""}`);
+}

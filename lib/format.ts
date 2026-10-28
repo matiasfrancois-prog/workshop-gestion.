@@ -33,6 +33,12 @@ export const TIPOS: Record<string, { label: string; corto: string }> = {
   compra: { label: "Compra", corto: "CMP" },
   nc_compra: { label: "Nota de crédito proveedor", corto: "NCC" },
   nd_compra: { label: "Nota de débito proveedor", corto: "NDC" },
+  orden_compra: { label: "Orden de compra", corto: "OC" },
+};
+
+export const GRUPOS: Record<string, { titulo: string; tipos: string[] }> = {
+  ventas: { titulo: "Ventas", tipos: ["venta", "nc_venta", "nd_venta", "pedido", "presupuesto"] },
+  compras: { titulo: "Compras", tipos: ["compra", "nc_compra", "nd_compra", "orden_compra"] },
 };
 
 export function nroComprobante(tipo: string, numero: number): string {

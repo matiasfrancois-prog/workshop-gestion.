@@ -20,7 +20,10 @@ Stack: Next.js (Vercel) + Supabase (base de datos y login).
 | IMEI / series | Cada unidad que entra y sale con su número de serie. Escáner, pegar lista o cámara. Buscador con historial |
 | Costo real | Promedio ponderado: cada compra recalcula el costo con lo que hay en stock |
 | PDF | Comprobantes (A4 y ticket 80mm), recibos y órdenes de pago, guía de despacho, rótulo media A4 con FRÁGIL, resumen de cuenta |
-| Configuración | Dólar del día, listas de precios, datos de la empresa |
+| Documentos | Cada comprobante y recibo se ve como documento (hoja con encabezado, datos y detalle). Modificar, copiar, anterior/siguiente |
+| Compras | Comprobante del proveedor, vencimiento, cotización, actualiza costos, contado o cuenta corriente, orden de compra → recibir |
+| Gastos | Por categoría, con resumen del período en Caja |
+| Configuración | Dólar del día, listas de precios, datos de la empresa, categorías de gasto |
 
 Roles: **admin** (ve costos y márgenes, anula comprobantes) y **vendedor**.
 
@@ -32,7 +35,7 @@ Roles: **admin** (ve costos y márgenes, anula comprobantes) y **vendedor**.
 1. Entrá a supabase.com, abrí el proyecto **workshop-gestion**.
 2. Menú izquierdo → **SQL Editor** → **New query**.
 3. Abrí el archivo `supabase/schema.sql`, copiá todo, pegalo y tocá **Run**. Tiene que decir *Success*.
-   Después hacé lo mismo, en orden, con cada migración: `supabase/002_caja_imei_costos.sql` y `supabase/003_notas_saldos_arqueo.sql`.
+   Después hacé lo mismo, en orden, con cada migración: `supabase/002_caja_imei_costos.sql` , `supabase/003_notas_saldos_arqueo.sql` y `supabase/004_modificar_oc_gastos.sql`.
 4. Menú izquierdo → **Authentication** → **Users** → **Add user** → **Create new user**.
    Poné tu email y una contraseña. Marcá **Auto Confirm User**.
 5. Volvé a **SQL Editor**, pegá esta línea cambiando el email, y tocá **Run**:

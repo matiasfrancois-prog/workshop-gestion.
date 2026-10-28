@@ -7,8 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 
 const VALIDOS = ["venta", "pedido", "presupuesto", "nc_venta"] as const;
 
-export default async function Vender({ searchParams }: { searchParams: Promise<{ cliente?: string; tipo?: string; desde?: string }> }) {
-  const { cliente, tipo, desde } = await searchParams;
+export default async function Vender({ searchParams }: { searchParams: Promise<{ cliente?: string; tipo?: string; desde?: string; copiar?: string }> }) {
+  const { cliente, tipo, desde: desdeParam, copiar } = await searchParams;
+  const desde = desdeParam ?? copiar;
   const perfil = await getPerfil();
   const [{ productos, terceros, listaDefault, disponibles }, cc] = await Promise.all([datosCarrito("venta"), getCajasYCotizacion()]);
 
@@ -20,10 +21,10 @@ export default async function Vender({ searchParams }: { searchParams: Promise<{
     if (data) origen = { ...data, items: (data.comprobante_items as LineaInicial[]).map((i) => ({ ...i, cantidad: Number(i.cantidad), precio_unit: Number(i.precio_unit) })) };
   }
 
-  const t = origen ? "venta" : (VALIDOS as readonly string[]).includes(tipo ?? "") ? (tipo as (typeof VALIDOS)[number]) : "venta";
+  const t = copiar && origen ? (origen.tipo as (typeof VALIDOS)[number]) : origen ? "venta" : (VALIDOS as readonly string[]).includes(tipo ?? "") ? (tipo as (typeof VALIDOS)[number]) : "venta";
   return (
     <>
-      <Encabezado titulo={origen ? `Venta desde ${nroComprobante(origen.tipo, origen.numero)}` : "Nuevo comprobante"} volver={origen ? `/comprobantes/${origen.id}` : undefined} />
+      <Encabezado titulo={origen ? `${copiar ? "Copia de" : "Venta desde"} ${nroComprobante(origen.tipo, origen.numero)}` : "Nuevo comprobante"} volver={origen ? `/comprobantes/${origen.id}` : undefined} />
       <Pagina>
         <Carrito
           modo="venta"
@@ -38,7 +39,7 @@ export default async function Vender({ searchParams }: { searchParams: Promise<{
           cotizacion={cc.cotizacion}
           lineasIniciales={origen?.items}
           monedaInicial={origen?.moneda}
-          origenId={origen?.id}
+          origenId={copiar ? null : origen?.id}
         />
       </Pagina>
     </>

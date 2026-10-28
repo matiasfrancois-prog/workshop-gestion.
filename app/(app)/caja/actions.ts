@@ -16,8 +16,18 @@ export async function movimientoManual(form: FormData) {
     p_importe: Number(form.get("importe")),
     p_concepto: String(form.get("concepto") ?? "").trim() || null,
     p_fecha: String(form.get("fecha") || "") || undefined,
+    p_categoria_id: form.get("tipo") === "gasto" && form.get("categoria_id") ? Number(form.get("categoria_id")) : null,
   });
   volver(error?.message);
+}
+
+export async function guardarCategoria(form: FormData) {
+  const supabase = await createClient();
+  const id = form.get("id");
+  const datos = { nombre: String(form.get("nombre")).trim(), activa: form.get("activa") === "on", orden: Number(form.get("orden") ?? 0) };
+  const { error } = id ? await supabase.from("categorias_gasto").update(datos).eq("id", Number(id)) : await supabase.from("categorias_gasto").insert(datos);
+  revalidatePath("/", "layout");
+  redirect(`/mas/categorias${error ? `?error=${encodeURIComponent(error.message)}` : ""}`);
 }
 
 export async function transferencia(form: FormData) {

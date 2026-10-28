@@ -27,6 +27,11 @@ export type ComprobantePdf = {
   proveedor: TerceroPdf | null;
   items: ItemPdf[];
   vendedor: string | null;
+  nro_externo: string | null;
+  vencimiento: string | null;
+  cotizacion: number | null;
+  contado: boolean;
+  pendiente: number | null;
 };
 
 const TERCERO = "id, nombre, razon_social, cuit, telefono, email, direccion";
@@ -41,17 +46,20 @@ export async function comprobante(id: string): Promise<ComprobantePdf | null> {
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("comprobantes")
-    .select(`*, clientes(${TERCERO}, localidad), proveedores(${TERCERO}), perfiles(nombre), comprobante_items(id, descripcion, cantidad, precio_unit, subtotal, item_series(unidades(serie)))`)
+    .select(`*, clientes(${TERCERO}, localidad), proveedores(${TERCERO}), vendedor:perfiles!comprobantes_vendedor_id_fkey(nombre), comprobante_items(id, descripcion, cantidad, precio_unit, subtotal, item_series(unidades(serie)))`)
     .eq("id", id)
     .maybeSingle();
   if (!c) return null;
+  const { data: est } = await supabase.from("estado_documentos").select("pendiente").eq("comprobante_id", id).maybeSingle();
   type ItemRaw = Omit<ItemPdf, "series"> & { item_series: { unidades: { serie: string } }[] };
   return {
     ...c,
     total: Number(c.total),
+    cotizacion: c.cotizacion ? Number(c.cotizacion) : null,
+    pendiente: est ? Number(est.pendiente) : null,
     cliente: c.clientes as TerceroPdf | null,
     proveedor: c.proveedores as TerceroPdf | null,
-    vendedor: (c.perfiles as { nombre: string } | null)?.nombre ?? null,
+    vendedor: (c.vendedor as { nombre: string } | null)?.nombre ?? null,
     items: ((c.comprobante_items ?? []) as ItemRaw[])
       .sort((a, b) => a.id - b.id)
       .map((i) => ({

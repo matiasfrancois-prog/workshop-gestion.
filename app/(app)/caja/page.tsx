@@ -27,7 +27,7 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
 
   let q = supabase
     .from("movimientos_caja")
-    .select("id, fecha, importe, tipo, concepto, anulado, pago_id, caja_id, cajas(nombre, moneda)")
+    .select("id, fecha, importe, tipo, concepto, anulado, pago_id, caja_id, cajas(nombre, moneda), categorias_gasto(nombre)")
     .gte("fecha", desde)
     .lte("fecha", hasta)
     .order("fecha", { ascending: false })
@@ -35,10 +35,11 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
     .limit(300);
   if (sp.caja) q = q.eq("caja_id", sp.caja);
 
-  const [{ data: saldos }, { data: movs }, { data: cotiz }] = await Promise.all([
+  const [{ data: saldos }, { data: movs }, { data: cotiz }, { data: categorias }] = await Promise.all([
     supabase.from("saldos_cajas").select("*").eq("activa", true).order("orden"),
     q,
     supabase.from("cotizaciones").select("usd_ars").order("fecha", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("categorias_gasto").select("id, nombre").eq("activa", true).order("orden"),
   ]);
   const cajas = saldos ?? [];
 
@@ -51,6 +52,17 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
     else r.sale += Number(m.importe);
     resumen.set(m.caja_id, r);
   }
+  // Gastos del período por categoría y moneda
+  const gastos = new Map<string, Record<string, number>>();
+  for (const m of movs ?? []) {
+    if (m.anulado || m.tipo !== "gasto") continue;
+    const cat = (m.categorias_gasto as unknown as { nombre: string } | null)?.nombre ?? "Sin categoría";
+    const mon = (m.cajas as unknown as { moneda: string }).moneda;
+    const r = gastos.get(cat) ?? {};
+    r[mon] = (r[mon] ?? 0) - Number(m.importe);
+    gastos.set(cat, r);
+  }
+
   const link = (extra: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     const v = { caja: sp.caja, desde, hasta, ...extra };
@@ -60,8 +72,8 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
 
   return (
     <>
-      <Encabezado titulo="Caja" />
-      <Pagina>
+      <Encabezado titulo="Caja" ancho="ancho" />
+      <Pagina ancho="ancho">
         {sp.error && <p className="card text-sm text-mal">{sp.error}</p>}
         {sp.ok && <p className="card text-sm text-ok font-semibold">✓ Movimiento registrado</p>}
 
@@ -103,6 +115,20 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
                   </div>
                 );
               })}
+          </section>
+        )}
+
+        {gastos.size > 0 && (
+          <section className="card p-0 overflow-hidden">
+            <h2 className="px-4 pt-3 pb-1 font-semibold">Gastos por categoría</h2>
+            {[...gastos.entries()].sort().map(([cat, r]) => (
+              <div key={cat} className="fila text-sm">
+                <span className="flex-1">{cat}</span>
+                {Object.entries(r).map(([mon, v]) => (
+                  <span key={mon} className="font-semibold text-mal">{money(v, mon as MonedaCaja)}</span>
+                ))}
+              </div>
+            ))}
           </section>
         )}
 
@@ -173,8 +199,17 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
                 <label className="label">Fecha</label>
                 <input className="input" name="fecha" type="date" defaultValue={hoy} />
               </div>
+              <div className="col-span-2">
+                <label className="label">Categoría (para gastos)</label>
+                <select className="input" name="categoria_id" defaultValue="">
+                  <option value="">—</option>
+                  {(categorias ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <input className="input" name="concepto" placeholder="Concepto: flete, alquiler, retiro Andrea…" required />
+            <input className="input" name="concepto" placeholder="Detalle: moto Juan, alquiler octubre, retiro Andrea…" required />
             <button className="btn-primario w-full">Guardar</button>
           </form>
         </details>
@@ -226,11 +261,12 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium truncate ${m.anulado ? "line-through" : ""}`}>{m.concepto ?? TIPO[m.tipo]}</p>
                   <p className="text-xs text-suave">
-                    {fecha(m.fecha)} · {TIPO[m.tipo]} · {caja.nombre}
+                    {fecha(m.fecha)} · {TIPO[m.tipo]}
+                    {(m.categorias_gasto as unknown as { nombre: string } | null) && ` (${(m.categorias_gasto as unknown as { nombre: string }).nombre})`} · {caja.nombre}
                     {m.pago_id && (
                       <>
                         {" · "}
-                        <a href={`/pdf/recibo/${m.pago_id}`} target="_blank" className="text-marca">PDF</a>
+                        <a href={`/recibos/${m.pago_id}`} className="text-marca">Ver recibo</a>
                       </>
                     )}
                   </p>

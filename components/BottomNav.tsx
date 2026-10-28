@@ -13,7 +13,7 @@ const items = [
 export default function BottomNav() {
   const path = usePathname();
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-linea pb-[env(safe-area-inset-bottom)]">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-linea pb-[env(safe-area-inset-bottom)]">
       <ul className="grid grid-cols-5 max-w-xl mx-auto">
         {items.map((it) => {
           const activo = it.href === "/" ? path === "/" : path.startsWith(it.href);
