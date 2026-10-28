@@ -45,29 +45,32 @@ export async function guardarTercero(form: FormData) {
   redirect(`/${tabla}/${nuevoId}`);
 }
 
+/** Cobro a cliente o pago a proveedor: genera recibo / orden de pago y mueve la caja. */
 export async function registrarPago(form: FormData) {
   const supabase = await createClient();
   const tabla = form.get("tabla") === "proveedores" ? "proveedores" : "clientes";
   const id = Number(form.get("id"));
-  const { error } = await supabase.from("pagos").insert({
-    [tabla === "clientes" ? "cliente_id" : "proveedor_id"]: id,
-    moneda: form.get("moneda") === "ARS" ? "ARS" : "USD",
-    importe: Number(form.get("importe")),
-    medio: t(form, "medio") ?? "efectivo",
-    notas: t(form, "notas"),
-    fecha: t(form, "fecha") ?? undefined,
+  const { data, error } = await supabase.rpc("registrar_pago", {
+    p_cliente_id: tabla === "clientes" ? id : null,
+    p_proveedor_id: tabla === "proveedores" ? id : null,
+    p_caja_id: Number(form.get("caja_id")),
+    p_importe_caja: Number(form.get("importe_caja")),
+    p_moneda: form.get("moneda") === "ARS" ? "ARS" : "USD",
+    p_importe: Number(form.get("importe")),
+    p_fecha: t(form, "fecha") ?? undefined,
+    p_notas: t(form, "notas"),
   });
-  if (error) throw new Error(error.message);
-  revalidatePath(`/${tabla}/${id}`);
-  redirect(`/${tabla}/${id}`);
+  if (error) redirect(`/${tabla}/${id}?error=${encodeURIComponent(error.message)}`);
+  revalidatePath("/", "layout");
+  redirect(`/${tabla}/${id}?recibo=${data}`);
 }
 
 export async function anularPago(form: FormData) {
   const supabase = await createClient();
   const tabla = form.get("tabla") === "proveedores" ? "proveedores" : "clientes";
   const id = Number(form.get("id"));
-  const { error } = await supabase.from("pagos").update({ anulado: true }).eq("id", Number(form.get("pago_id")));
-  if (error) throw new Error(error.message);
-  revalidatePath(`/${tabla}/${id}`);
+  const { error } = await supabase.rpc("anular_pago", { p_id: Number(form.get("pago_id")) });
+  if (error) redirect(`/${tabla}/${id}?error=${encodeURIComponent(error.message)}`);
+  revalidatePath("/", "layout");
   redirect(`/${tabla}/${id}`);
 }

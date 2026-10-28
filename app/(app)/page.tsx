@@ -10,12 +10,13 @@ export default async function Inicio() {
   const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
   const inicioMes = hoy.slice(0, 8) + "01";
 
-  const [ventasMes, saldos, stock, cotiz, ultimos] = await Promise.all([
+  const [ventasMes, saldos, stock, cotiz, ultimos, cajas] = await Promise.all([
     supabase.from("comprobantes").select("tipo, fecha, moneda, total").in("tipo", ["venta", "nc_venta"]).eq("estado", "confirmado").gte("fecha", inicioMes),
     supabase.from("saldos_clientes").select("saldo_usd, saldo_ars"),
     supabase.from("stock_actual").select("producto_id, nombre, stock, stock_minimo"),
     supabase.from("cotizaciones").select("fecha, usd_ars").order("fecha", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("comprobantes").select("id, tipo, numero, fecha, total, moneda, clientes(nombre), proveedores(nombre)").order("creado", { ascending: false }).limit(6),
+    supabase.from("saldos_cajas").select("caja_id, nombre, moneda, saldo").eq("activa", true).order("orden"),
   ]);
 
   const suma = (rows: { tipo: string; total: number; moneda: string }[], m: string) =>
@@ -41,6 +42,15 @@ export default async function Inicio() {
             href="/mas/cotizacion"
           />
         </section>
+
+        <Link href="/caja" className="grid grid-cols-3 gap-2">
+          {(cajas.data ?? []).map((c) => (
+            <div key={c.caja_id} className="card p-3">
+              <p className="text-[12px] text-suave font-medium">Caja {c.nombre}</p>
+              <p className="text-[15px] font-bold mt-0.5">{money(c.saldo, c.moneda)}</p>
+            </div>
+          ))}
+        </Link>
 
         <section className="grid grid-cols-3 gap-2">
           <Atajo href="/vender?tipo=presupuesto" texto="Presupuesto" />

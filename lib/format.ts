@@ -1,11 +1,17 @@
 export type Moneda = "USD" | "ARS";
+export type MonedaCaja = Moneda | "USDT";
 
 const nf = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const nf0 = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
-export function money(n: number | string | null | undefined, moneda: Moneda = "USD"): string {
+export function money(n: number | string | null | undefined, moneda: MonedaCaja = "USD"): string {
   const v = Number(n ?? 0);
-  return `${moneda === "USD" ? "US$" : "$"} ${nf.format(v)}`;
+  const simbolo = moneda === "USD" ? "US$" : moneda === "USDT" ? "USDT" : "$";
+  return `${simbolo} ${nf.format(v)}`;
+}
+
+export function nroRecibo(esCobro: boolean, numero: number): string {
+  return `${esCobro ? "REC" : "OP"}-${String(numero).padStart(5, "0")}`;
 }
 
 export function num(n: number | string | null | undefined): string {

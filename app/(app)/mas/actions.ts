@@ -30,3 +30,23 @@ export async function guardarLista(form: FormData) {
   revalidatePath("/", "layout");
   redirect("/mas/listas");
 }
+
+export async function guardarEmpresa(form: FormData) {
+  const supabase = await createClient();
+  const v = (k: string) => String(form.get(k) ?? "").trim() || null;
+  const { error } = await supabase
+    .from("empresa")
+    .update({
+      nombre: v("nombre") ?? "WORK SHOP",
+      razon_social: v("razon_social"),
+      cuit: v("cuit"),
+      direccion: v("direccion"),
+      localidad: v("localidad"),
+      telefono: v("telefono"),
+      email: v("email"),
+      pie: v("pie"),
+    })
+    .eq("id", 1);
+  if (error) throw new Error(error.message);
+  redirect("/mas/empresa?ok=1");
+}

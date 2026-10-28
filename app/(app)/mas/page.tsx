@@ -7,10 +7,12 @@ const grupos: { titulo: string; items: [string, string, string][]; soloAdmin?: b
   {
     titulo: "Operación",
     items: [
+      ["/caja", "Caja", "Pesos, dólares y USDT: gastos, retiros, cambios"],
       ["/comprobantes", "Comprobantes", "Ventas, pedidos, presupuestos y compras"],
       ["/comprar", "Cargar compra", "Ingreso de mercadería"],
       ["/proveedores", "Proveedores", "Datos y cuenta corriente"],
       ["/stock", "Stock", "Reposición y equipos sin rotación"],
+      ["/series", "Buscar IMEI / serie", "Dónde está un equipo y su historial"],
       ["/comparador", "Comparador de precios", "Precios de mercado del día"],
     ],
   },
@@ -20,6 +22,7 @@ const grupos: { titulo: string; items: [string, string, string][]; soloAdmin?: b
     items: [
       ["/mas/cotizacion", "Dólar del día", "Cotización para pasar a pesos"],
       ["/mas/listas", "Listas de precios", "Márgenes por lista"],
+      ["/mas/empresa", "Datos de la empresa", "Encabezado de los PDF"],
     ],
   },
 ];

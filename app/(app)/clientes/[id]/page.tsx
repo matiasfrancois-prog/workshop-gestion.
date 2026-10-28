@@ -3,13 +3,13 @@ import { notFound } from "next/navigation";
 import CuentaCorriente, { type Mov } from "@/components/CuentaCorriente";
 import FormTercero from "@/components/FormTercero";
 import { Encabezado, Pagina, Saldo } from "@/components/ui";
-import { getPerfil } from "@/lib/data";
+import { getCajasYCotizacion, getPerfil } from "@/lib/data";
 import { money } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function Cliente({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ editar?: string }> }) {
+export default async function Cliente({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ editar?: string; error?: string; recibo?: string }> }) {
   const { id } = await params;
-  const { editar } = await searchParams;
+  const { editar, error, recibo } = await searchParams;
   const perfil = await getPerfil();
   const supabase = await createClient();
   const { data: c } = await supabase.from("clientes").select("*, listas_precios(nombre)").eq("id", id).maybeSingle();
@@ -27,6 +27,7 @@ export default async function Cliente({ params, searchParams }: { params: Promis
     );
   }
 
+  const cc = await getCajasYCotizacion();
   const [{ data: saldo }, { data: movs }] = await Promise.all([
     supabase.from("saldos_clientes").select("saldo_usd, saldo_ars").eq("cliente_id", id).single(),
     supabase.from("ctacte_clientes").select("*").eq("cliente_id", id),
@@ -76,7 +77,7 @@ export default async function Cliente({ params, searchParams }: { params: Promis
           {c.notas && <p className="text-suave">{c.notas}</p>}
         </section>
 
-        <CuentaCorriente tabla="clientes" id={c.id} movs={(movs ?? []) as Mov[]} esAdmin={perfil.rol === "admin"} />
+        <CuentaCorriente tabla="clientes" id={c.id} movs={(movs ?? []) as Mov[]} esAdmin={perfil.rol === "admin"} {...cc} error={error} reciboNuevo={recibo} />
       </Pagina>
     </>
   );

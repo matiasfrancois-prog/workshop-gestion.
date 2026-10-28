@@ -16,7 +16,11 @@ Stack: Next.js (Vercel) + Supabase (base de datos y login).
 | Comprobantes | Listado con filtros, detalle, envío por WhatsApp (sin costos), convertir presupuesto/pedido en venta, anular |
 | Stock | Reponer (≤ 7 días), sin stock con venta, sobrestock, sin rotación |
 | Comparador | El comparador actual dentro del sistema |
-| Configuración | Dólar del día, listas de precios |
+| Caja | Pesos, Dólares y USDT. Cobros/pagos con recibo, gastos, retiros, aportes, cambios entre cajas |
+| IMEI / series | Cada unidad que entra y sale con su número de serie. Escáner, pegar lista o cámara. Buscador con historial |
+| Costo real | Promedio ponderado: cada compra recalcula el costo con lo que hay en stock |
+| PDF | Comprobantes (A4 y ticket 80mm), recibos y órdenes de pago, guía de despacho, rótulo media A4 con FRÁGIL, resumen de cuenta |
+| Configuración | Dólar del día, listas de precios, datos de la empresa |
 
 Roles: **admin** (ve costos y márgenes, anula comprobantes) y **vendedor**.
 
@@ -28,6 +32,7 @@ Roles: **admin** (ve costos y márgenes, anula comprobantes) y **vendedor**.
 1. Entrá a supabase.com, abrí el proyecto **workshop-gestion**.
 2. Menú izquierdo → **SQL Editor** → **New query**.
 3. Abrí el archivo `supabase/schema.sql`, copiá todo, pegalo y tocá **Run**. Tiene que decir *Success*.
+   Después hacé lo mismo, en orden, con cada migración: `supabase/002_caja_imei_costos.sql`.
 4. Menú izquierdo → **Authentication** → **Users** → **Add user** → **Create new user**.
    Poné tu email y una contraseña. Marcá **Auto Confirm User**.
 5. Volvé a **SQL Editor**, pegá esta línea cambiando el email, y tocá **Run**:

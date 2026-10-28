@@ -9,6 +9,7 @@ type Props = {
     costo_usd: number;
     stock_minimo: number;
     activo: boolean;
+    lleva_serie: boolean;
     notas: string | null;
     marca: string | null;
     categoria: string | null;
@@ -54,7 +55,7 @@ export default function FormProducto({ producto: p, listas, preciosManuales, mar
           </div>
           {esAdmin ? (
             <div>
-              <label className="label">Costo US$</label>
+              <label className="label">Costo promedio US$</label>
               <input className="input" name="costo_usd" type="number" step="0.01" inputMode="decimal" defaultValue={p?.costo_usd ?? ""} />
             </div>
           ) : (
@@ -63,6 +64,9 @@ export default function FormProducto({ producto: p, listas, preciosManuales, mar
         </div>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="activo" defaultChecked={p?.activo ?? true} className="size-5 accent-marca" /> Activo
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="lleva_serie" defaultChecked={p?.lleva_serie ?? true} className="size-5 accent-marca" /> Controla IMEI / número de serie
         </label>
       </div>
 

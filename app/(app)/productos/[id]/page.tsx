@@ -4,7 +4,8 @@ import { Encabezado, Pagina } from "@/components/ui";
 import { getPerfil } from "@/lib/data";
 import { fecha, money, nroComprobante, num } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { ajustarStock } from "../actions";
+import AjusteStock from "@/components/AjusteStock";
+import { todas } from "@/lib/todas";
 import FormProducto from "../FormProducto";
 
 const TIPO_MOV: Record<string, string> = {
@@ -60,6 +61,9 @@ export default async function Producto({ params, searchParams }: { params: Promi
   }
 
   const s = Number(stock?.stock ?? 0);
+  const enStock = (
+    await todas((a, b) => supabase.from("unidades").select("serie").eq("producto_id", id).eq("estado", "en_stock").order("serie").range(a, b))
+  ).map((u) => u.serie as string);
   return (
     <>
       <Encabezado
@@ -76,7 +80,7 @@ export default async function Producto({ params, searchParams }: { params: Promi
           </div>
           {esAdmin && (
             <div className="card">
-              <p className="text-xs text-suave">Costo</p>
+              <p className="text-xs text-suave">Costo promedio</p>
               <p className="text-2xl font-bold">{money(p.costo_usd)}</p>
             </div>
           )}
@@ -97,20 +101,21 @@ export default async function Producto({ params, searchParams }: { params: Promi
           })}
         </section>
 
+        {p.lleva_serie && (
+          <details className="card">
+            <summary className="font-semibold cursor-pointer">IMEI / series en stock ({enStock.length})</summary>
+            {enStock.length !== s && <p className="text-xs text-mal mt-2">⚠️ El stock ({num(s)}) no coincide con las series cargadas ({enStock.length}).</p>}
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {enStock.map((x) => (
+                <Link key={x} href={`/series?q=${encodeURIComponent(x)}`} className="chip bg-fondo border border-linea font-mono text-[11px]">{x}</Link>
+              ))}
+            </div>
+          </details>
+        )}
+
         <details className="card">
           <summary className="font-semibold cursor-pointer">Ajustar stock</summary>
-          <form action={ajustarStock} className="mt-3 space-y-3">
-            <input type="hidden" name="producto_id" value={id} />
-            <div>
-              <label className="label">Cantidad (+ entra / − sale)</label>
-              <input className="input" name="cantidad" type="number" inputMode="numeric" required placeholder="Ej: -1 equipo fallado" />
-            </div>
-            <div>
-              <label className="label">Motivo</label>
-              <input className="input" name="nota" placeholder="Conteo, falla, RMA…" />
-            </div>
-            <button className="btn-secundario w-full">Registrar ajuste</button>
-          </form>
+          <AjusteStock productoId={p.id} llevaSerie={p.lleva_serie} enStock={enStock} />
         </details>
 
         <section className="card p-0 overflow-hidden">

@@ -30,6 +30,7 @@ export async function guardarProducto(form: FormData) {
     categoria_id: await idPorNombre("categorias", texto(form, "categoria")),
     stock_minimo: Number(form.get("stock_minimo") ?? 0),
     activo: form.get("activo") === "on",
+    lleva_serie: form.get("lleva_serie") === "on",
     notas: texto(form, "notas"),
     actualizado: new Date().toISOString(),
   };
@@ -65,18 +66,14 @@ export async function guardarProducto(form: FormData) {
   redirect(`/productos/${productoId}`);
 }
 
-export async function ajustarStock(form: FormData) {
+export async function ajustarStock(productoId: number, cantidad: number, series: string[], nota: string): Promise<{ error?: string } | void> {
   const supabase = await createClient();
-  const productoId = Number(form.get("producto_id"));
-  const cantidad = Number(form.get("cantidad"));
-  if (!cantidad) redirect(`/productos/${productoId}`);
-  const { error } = await supabase.from("movimientos_stock").insert({
-    producto_id: productoId,
-    cantidad,
-    tipo: "ajuste",
-    nota: texto(form, "nota"),
+  const { error } = await supabase.rpc("ajustar_stock", {
+    p_producto_id: productoId,
+    p_cantidad: cantidad,
+    p_series: series,
+    p_nota: nota.trim() || null,
   });
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath(`/productos/${productoId}`);
-  redirect(`/productos/${productoId}`);
 }

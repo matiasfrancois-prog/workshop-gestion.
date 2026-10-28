@@ -29,3 +29,15 @@ export function precioEnLista(
   if (lista.margen_pct === null) return 0;
   return Math.round(costo * (1 + Number(lista.margen_pct) / 100) * 100) / 100;
 }
+
+export async function getCajasYCotizacion() {
+  const supabase = await createClient();
+  const [{ data: cajas }, { data: cotiz }] = await Promise.all([
+    supabase.from("cajas").select("id, nombre, moneda").eq("activa", true).order("orden"),
+    supabase.from("cotizaciones").select("usd_ars").order("fecha", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  return {
+    cajas: (cajas ?? []) as { id: number; nombre: string; moneda: "ARS" | "USD" | "USDT" }[],
+    cotizacion: Number(cotiz?.usd_ars ?? 0),
+  };
+}

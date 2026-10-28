@@ -1,19 +1,21 @@
 import type { ProductoVenta, Tercero } from "@/components/Carrito";
 import { precioEnLista, type Lista } from "./data";
 import { createClient } from "./supabase/server";
+import { todas } from "./todas";
 
 /** Carga todo lo que necesita la pantalla de venta/compra en una sola ida a la base. */
 export async function datosCarrito(modo: "venta" | "compra") {
   const supabase = await createClient();
-  const [productos, stock, reservado, listas, precios, terceros] = await Promise.all([
-    supabase.from("productos").select("id, nombre, costo_usd").eq("activo", true).order("nombre"),
-    supabase.from("stock_actual").select("producto_id, stock"),
+  const [productos, stock, reservado, listas, precios, terceros, unidades] = await Promise.all([
+    todas((a, b) => supabase.from("productos").select("id, nombre, costo_usd, lleva_serie").eq("activo", true).order("nombre").range(a, b)).then((data) => ({ data })),
+    todas((a, b) => supabase.from("stock_actual").select("producto_id, stock").order("producto_id").range(a, b)).then((data) => ({ data })),
     supabase.from("stock_reservado").select("producto_id, reservado"),
     supabase.from("listas_precios").select("*").eq("activa", true).order("orden"),
-    supabase.from("precios").select("producto_id, lista_id, precio_usd"),
+    todas((a, b) => supabase.from("precios").select("producto_id, lista_id, precio_usd").order("producto_id").range(a, b)).then((data) => ({ data })),
     modo === "venta"
       ? supabase.from("clientes").select("id, nombre, lista_id, habilitado, limite_credito_usd").order("nombre")
       : supabase.from("proveedores").select("id, nombre").eq("activo", true).order("nombre"),
+    todas((a, b) => supabase.from("unidades").select("producto_id, serie").eq("estado", "en_stock").order("id").range(a, b)).then((data) => ({ data })),
   ]);
   const saldos =
     modo === "venta"
@@ -31,6 +33,7 @@ export async function datosCarrito(modo: "venta" | "compra") {
     stock: stockMap.get(p.id) ?? 0,
     reservado: resMap.get(p.id) ?? 0,
     costo: Number(p.costo_usd),
+    llevaSerie: p.lleva_serie !== false,
     precios: Object.fromEntries(ls.map((l) => [l.id, precioEnLista(Number(p.costo_usd), l, manual, p.id)])),
   }));
 
@@ -50,5 +53,8 @@ export async function datosCarrito(modo: "venta" | "compra") {
     saldo_ars: saldoMap.get(Number(t.id))?.ars ?? 0,
   }));
 
-  return { productos: prods, terceros: ters, listaDefault: ls[0]?.id ?? null };
+  const disponibles: Record<number, string[]> = {};
+  for (const u of unidades.data ?? []) (disponibles[u.producto_id] ??= []).push(u.serie);
+
+  return { productos: prods, terceros: ters, listaDefault: ls[0]?.id ?? null, disponibles };
 }

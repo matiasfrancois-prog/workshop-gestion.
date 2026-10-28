@@ -3,12 +3,12 @@ import { notFound } from "next/navigation";
 import CuentaCorriente, { type Mov } from "@/components/CuentaCorriente";
 import FormTercero from "@/components/FormTercero";
 import { Encabezado, Pagina, Saldo } from "@/components/ui";
-import { getPerfil } from "@/lib/data";
+import { getCajasYCotizacion, getPerfil } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function Proveedor({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ editar?: string }> }) {
+export default async function Proveedor({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ editar?: string; error?: string; recibo?: string }> }) {
   const { id } = await params;
-  const { editar } = await searchParams;
+  const { editar, error, recibo } = await searchParams;
   const perfil = await getPerfil();
   const supabase = await createClient();
   const { data: p } = await supabase.from("proveedores").select("*").eq("id", id).maybeSingle();
@@ -25,6 +25,7 @@ export default async function Proveedor({ params, searchParams }: { params: Prom
     );
   }
 
+  const cc = await getCajasYCotizacion();
   const [{ data: saldo }, { data: movs }] = await Promise.all([
     supabase.from("saldos_proveedores").select("saldo_usd, saldo_ars").eq("proveedor_id", id).single(),
     supabase.from("ctacte_proveedores").select("*").eq("proveedor_id", id),
@@ -49,7 +50,7 @@ export default async function Proveedor({ params, searchParams }: { params: Prom
           </div>
         </section>
         <Link href={`/comprar?proveedor=${id}`} className="btn-primario w-full">Cargar compra</Link>
-        <CuentaCorriente tabla="proveedores" id={p.id} movs={(movs ?? []) as Mov[]} esAdmin={perfil.rol === "admin"} />
+        <CuentaCorriente tabla="proveedores" id={p.id} movs={(movs ?? []) as Mov[]} esAdmin={perfil.rol === "admin"} {...cc} error={error} reciboNuevo={recibo} />
       </Pagina>
     </>
   );
