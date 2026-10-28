@@ -8,8 +8,10 @@ const TITULOS: Record<string, string> = {
   pedido: "NOTA DE PEDIDO",
   venta: "COMPROBANTE DE VENTA",
   nc_venta: "NOTA DE CRÉDITO",
+  nd_venta: "NOTA DE DÉBITO",
   compra: "INGRESO DE MERCADERÍA",
-  nc_compra: "DEVOLUCIÓN A PROVEEDOR",
+  nc_compra: "NOTA DE CRÉDITO PROVEEDOR",
+  nd_compra: "NOTA DE DÉBITO PROVEEDOR",
 };
 
 function DatosTercero({ t, rotulo }: { t: TerceroPdf | null; rotulo: string }) {
@@ -39,7 +41,7 @@ function DatosTercero({ t, rotulo }: { t: TerceroPdf | null; rotulo: string }) {
 
 // ---------- Comprobante (venta, pedido, presupuesto, compra, NC) ----------
 export function ComprobanteA4({ e, c, saldo }: { e: Empresa; c: ComprobantePdf; saldo?: { usd: number; ars: number } }) {
-  const esCompra = c.tipo === "compra" || c.tipo === "nc_compra";
+  const esCompra = ["compra", "nc_compra", "nd_compra"].includes(c.tipo);
   const nro = nroComprobante(c.tipo, c.numero);
   return (
     <A4 titulo={nro}>
@@ -84,7 +86,7 @@ export function ComprobanteA4({ e, c, saldo }: { e: Empresa; c: ComprobantePdf; 
         </View>
       </View>
 
-      {saldo && (c.tipo === "venta" || c.tipo === "nc_venta") && (
+      {saldo && ["venta", "nc_venta", "nd_venta"].includes(c.tipo) && (
         <View style={{ marginTop: 10, alignItems: "flex-end" }}>
           <Text style={s.suave}>
             Saldo de su cuenta corriente: {money(saldo.usd, "USD")}

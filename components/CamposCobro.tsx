@@ -9,8 +9,7 @@ export type Cobro = { caja_id: number; importe_caja: number; moneda: Moneda; imp
 function tcSugerido(caja: MonedaCaja, cuenta: Moneda, cotiz: number): number {
   if (caja === cuenta) return 1;
   if ((caja === "USDT" || caja === "USD") && cuenta === "USD") return 1;
-  if (caja === "ARS" && cuenta === "USD") return cotiz || 1; // $ por US$
-  return cotiz || 1; // US$/USDT → $
+  return cotiz || 0; // $ por US$: se completa con el dólar del día (editable)
 }
 
 /**
@@ -46,7 +45,7 @@ export default function CamposCobro({
   const ic = Number(importeCaja) || 0;
   // ARS → USD divide; USD/USDT → ARS multiplica; USDT → USD 1:1 por tc
   const imputado =
-    !distinta ? ic : caja.moneda === "ARS" ? Math.round((ic / (tc || 1)) * 100) / 100 : Math.round(ic * (tc || 1) * 100) / 100;
+    !distinta ? ic : !(tc > 0) ? 0 : caja.moneda === "ARS" ? Math.round((ic / tc) * 100) / 100 : Math.round(ic * tc * 100) / 100;
 
   useEffect(() => {
     onChange?.(caja && ic > 0 && imputado > 0 ? { caja_id: caja.id, importe_caja: ic, moneda: cuenta, importe: imputado } : null);
@@ -87,7 +86,11 @@ export default function CamposCobro({
             <input className="input" type="number" step="0.0001" inputMode="decimal" value={tc} onChange={(e) => setTc(Number(e.target.value))} />
           </div>
           <p className="text-sm pb-3">
-            Descuenta <b>{money(imputado, cuenta)}</b>
+            {tc > 0 ? (
+              <>Descuenta <b>{money(imputado, cuenta)}</b></>
+            ) : (
+              <span className="text-mal">Cargá la cotización</span>
+            )}
           </p>
         </div>
       )}

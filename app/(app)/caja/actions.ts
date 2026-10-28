@@ -38,3 +38,16 @@ export async function anularMovimiento(form: FormData) {
   const { error } = await supabase.rpc("anular_movimiento_caja", { p_id: Number(form.get("id")) });
   volver(error?.message);
 }
+
+/** Saldo inicial o arqueo: se carga lo que hay realmente y se registra la diferencia. */
+export async function fijarSaldo(form: FormData) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fijar_saldo_caja", {
+    p_caja_id: Number(form.get("caja_id")),
+    p_saldo_real: Number(form.get("saldo_real")),
+    p_tipo: form.get("tipo") === "saldo_inicial" ? "saldo_inicial" : "arqueo",
+    p_concepto: String(form.get("concepto") ?? "").trim() || null,
+    p_fecha: String(form.get("fecha") || "") || undefined,
+  });
+  volver(error?.message);
+}

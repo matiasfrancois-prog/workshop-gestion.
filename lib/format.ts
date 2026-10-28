@@ -28,9 +28,11 @@ export const TIPOS: Record<string, { label: string; corto: string }> = {
   presupuesto: { label: "Presupuesto", corto: "PRE" },
   pedido: { label: "Pedido", corto: "PED" },
   venta: { label: "Venta", corto: "VTA" },
-  nc_venta: { label: "Devolución de cliente", corto: "NCV" },
+  nc_venta: { label: "Nota de crédito cliente", corto: "NCV" },
+  nd_venta: { label: "Nota de débito cliente", corto: "NDV" },
   compra: { label: "Compra", corto: "CMP" },
-  nc_compra: { label: "Devolución a proveedor", corto: "NCC" },
+  nc_compra: { label: "Nota de crédito proveedor", corto: "NCC" },
+  nd_compra: { label: "Nota de débito proveedor", corto: "NDC" },
 };
 
 export function nroComprobante(tipo: string, numero: number): string {

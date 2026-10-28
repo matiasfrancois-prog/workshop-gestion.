@@ -32,7 +32,7 @@ Roles: **admin** (ve costos y márgenes, anula comprobantes) y **vendedor**.
 1. Entrá a supabase.com, abrí el proyecto **workshop-gestion**.
 2. Menú izquierdo → **SQL Editor** → **New query**.
 3. Abrí el archivo `supabase/schema.sql`, copiá todo, pegalo y tocá **Run**. Tiene que decir *Success*.
-   Después hacé lo mismo, en orden, con cada migración: `supabase/002_caja_imei_costos.sql`.
+   Después hacé lo mismo, en orden, con cada migración: `supabase/002_caja_imei_costos.sql` y `supabase/003_notas_saldos_arqueo.sql`.
 4. Menú izquierdo → **Authentication** → **Users** → **Add user** → **Create new user**.
    Poné tu email y una contraseña. Marcá **Auto Confirm User**.
 5. Volvé a **SQL Editor**, pegá esta línea cambiando el email, y tocá **Run**:

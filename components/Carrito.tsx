@@ -177,7 +177,7 @@ export default function Carrito(props: Props) {
             onClick={() => setTipo(t)}
             className={`chip h-9 px-3 whitespace-nowrap border ${tipo === t ? "bg-marca text-white border-marca" : "bg-white border-linea"}`}
           >
-            {TIPOS[t].label}
+            {t === "nc_venta" ? "Devolución" : t === "nc_compra" ? "Devolución a proveedor" : TIPOS[t].label}
           </button>
         ))}
       </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { anularPago, registrarPago } from "@/app/(app)/clientes/actions";
+import { anularPago, registrarNota, registrarPago } from "@/app/(app)/clientes/actions";
 import { fecha, money, nroComprobante, nroRecibo, type Moneda } from "@/lib/format";
 import CamposCobro, { type Caja } from "./CamposCobro";
 
@@ -62,6 +62,57 @@ export default function CuentaCorriente({
             </div>
           </div>
           <button className="btn-primario w-full">Guardar y generar {esCliente ? "recibo" : "orden de pago"}</button>
+        </form>
+      </details>
+
+      <details className="card">
+        <summary className="font-semibold cursor-pointer">Nota de crédito / débito · Saldo inicial</summary>
+        <form action={registrarNota} className="mt-3 space-y-3">
+          <input type="hidden" name="tabla" value={tabla} />
+          <input type="hidden" name="id" value={id} />
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex items-center gap-2 rounded-xl border border-linea px-3 h-12 text-sm has-[:checked]:border-marca has-[:checked]:bg-marca/5">
+              <input type="radio" name="clase" value="nd" defaultChecked className="accent-marca" />
+              <span><b>Débito</b><br /><span className="text-xs text-suave">{esCliente ? "Suma a su deuda" : "Suma a lo que debemos"}</span></span>
+            </label>
+            <label className="flex items-center gap-2 rounded-xl border border-linea px-3 h-12 text-sm has-[:checked]:border-marca has-[:checked]:bg-marca/5">
+              <input type="radio" name="clase" value="nc" className="accent-marca" />
+              <span><b>Crédito</b><br /><span className="text-xs text-suave">{esCliente ? "Resta de su deuda" : "Resta de lo que debemos"}</span></span>
+            </label>
+          </div>
+          <div className="grid grid-cols-[1fr_2fr] gap-3">
+            <div>
+              <label className="label">Moneda</label>
+              <select className="input" name="moneda">
+                <option value="USD">US$</option>
+                <option value="ARS">$</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Importe</label>
+              <input className="input" name="importe" type="number" step="0.01" inputMode="decimal" required />
+            </div>
+          </div>
+          <div>
+            <label className="label">Concepto</label>
+            <input className="input" name="concepto" list="conceptos-nota" placeholder="Elegí o escribí" required />
+            <datalist id="conceptos-nota">
+              <option value="Saldo inicial" />
+              <option value="Descuento" />
+              <option value="Bonificación" />
+              <option value="Diferencia de precio" />
+              <option value="Diferencia de cambio" />
+              <option value="Intereses" />
+              <option value="Flete" />
+              <option value="Ajuste de cuenta" />
+            </datalist>
+          </div>
+          <div>
+            <label className="label">Fecha</label>
+            <input className="input" name="fecha" type="date" />
+          </div>
+          <p className="text-xs text-suave">Para devoluciones con mercadería (vuelven equipos al stock) usá {esCliente ? "Vender → Devolución" : "Cargar compra → Devolución a proveedor"}.</p>
+          <button className="btn-primario w-full">Generar nota</button>
         </form>
       </details>
 

@@ -74,3 +74,23 @@ export async function anularPago(form: FormData) {
   revalidatePath("/", "layout");
   redirect(`/${tabla}/${id}`);
 }
+
+/** Nota de crédito / débito sin mercadería (descuento, diferencia de cambio, saldo inicial…). */
+export async function registrarNota(form: FormData) {
+  const supabase = await createClient();
+  const tabla = form.get("tabla") === "proveedores" ? "proveedores" : "clientes";
+  const id = Number(form.get("id"));
+  const clase = form.get("clase") === "nd" ? "nd" : "nc";
+  const { data, error } = await supabase.rpc("nota_cuenta", {
+    p_tipo: `${clase}_${tabla === "clientes" ? "venta" : "compra"}`,
+    p_cliente_id: tabla === "clientes" ? id : null,
+    p_proveedor_id: tabla === "proveedores" ? id : null,
+    p_moneda: form.get("moneda") === "ARS" ? "ARS" : "USD",
+    p_importe: Number(form.get("importe")),
+    p_concepto: t(form, "concepto"),
+    p_fecha: t(form, "fecha") ?? undefined,
+  });
+  if (error) redirect(`/${tabla}/${id}?error=${encodeURIComponent(error.message)}`);
+  revalidatePath("/", "layout");
+  redirect(`/comprobantes/${data}?nuevo=1`);
+}

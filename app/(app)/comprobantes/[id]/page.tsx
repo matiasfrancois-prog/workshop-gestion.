@@ -40,7 +40,7 @@ export default async function Comprobante({
   const items = ((c.comprobante_items ?? []) as Item[]).sort((a, b) => a.id - b.id);
   const nro = nroComprobante(c.tipo, c.numero);
   const costo = items.reduce((a, i) => a + Number(i.cantidad) * Number(i.costo_unit ?? 0), 0);
-  const esVenta = ["venta", "pedido", "presupuesto", "nc_venta"].includes(c.tipo);
+  const esVenta = ["venta", "pedido", "presupuesto", "nc_venta", "nd_venta"].includes(c.tipo);
 
   // Texto para WhatsApp (sin costos ni stock)
   const texto = [

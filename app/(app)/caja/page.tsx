@@ -3,7 +3,7 @@ import { Encabezado, Pagina, Vacio } from "@/components/ui";
 import { getPerfil } from "@/lib/data";
 import { fecha, money, num, type MonedaCaja } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { anularMovimiento, movimientoManual, transferencia } from "./actions";
+import { anularMovimiento, fijarSaldo, movimientoManual, transferencia } from "./actions";
 
 const TIPO: Record<string, string> = {
   cobro: "Cobro",
@@ -13,6 +13,8 @@ const TIPO: Record<string, string> = {
   aporte: "Aporte",
   transferencia: "Cambio / transf.",
   ajuste: "Ajuste",
+  saldo_inicial: "Saldo inicial",
+  arqueo: "Arqueo",
 };
 
 export default async function Caja({ searchParams }: { searchParams: Promise<{ caja?: string; desde?: string; hasta?: string; error?: string; ok?: string }> }) {
@@ -105,7 +107,45 @@ export default async function Caja({ searchParams }: { searchParams: Promise<{ c
         )}
 
         <details className="card">
-          <summary className="font-semibold cursor-pointer">Gasto, retiro, aporte o ajuste</summary>
+          <summary className="font-semibold cursor-pointer">Saldo inicial / Arqueo (ajuste)</summary>
+          <form action={fijarSaldo} className="mt-3 space-y-3">
+            <p className="text-xs text-suave">
+              Cargá lo que hay <b>realmente</b> en la caja (contado). El sistema compara con su saldo y registra la diferencia como ajuste.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-2 rounded-xl border border-linea px-3 h-11 text-sm has-[:checked]:border-marca has-[:checked]:bg-marca/5">
+                <input type="radio" name="tipo" value="arqueo" defaultChecked className="accent-marca" /> Arqueo
+              </label>
+              <label className="flex items-center gap-2 rounded-xl border border-linea px-3 h-11 text-sm has-[:checked]:border-marca has-[:checked]:bg-marca/5">
+                <input type="radio" name="tipo" value="saldo_inicial" className="accent-marca" /> Saldo inicial
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Caja</label>
+                <select className="input" name="caja_id">
+                  {cajas.map((c) => (
+                    <option key={c.caja_id} value={c.caja_id}>
+                      {c.nombre} (sistema {money(c.saldo, c.moneda as MonedaCaja)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Saldo real contado</label>
+                <input className="input" name="saldo_real" type="number" step="0.01" inputMode="decimal" required />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input className="input" name="concepto" placeholder="Nota (opcional)" />
+              <input className="input" name="fecha" type="date" defaultValue={hoy} />
+            </div>
+            <button className="btn-primario w-full">Registrar</button>
+          </form>
+        </details>
+
+        <details className="card">
+          <summary className="font-semibold cursor-pointer">Gasto, retiro, aporte o ajuste manual</summary>
           <form action={movimientoManual} className="mt-3 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
